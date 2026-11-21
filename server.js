@@ -209,8 +209,14 @@ app.post('/api/admin/media', admin, upload.single('image'), wrap(async (req, res
 }));
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
-app.use(express.static(publicDir, { maxAge: '1h', index: 'index.html' }));
-app.get('*', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
+app.use(express.static(publicDir, {
+  maxAge: 0,
+  index: 'index.html',
+  setHeaders: (res, filePath) => {
+    res.setHeader('Cache-Control', /\.(?:html|css|js)$/.test(filePath) ? 'no-store' : 'public, max-age=86400');
+  }
+}));
+app.get('*', (req, res) => res.set('Cache-Control', 'no-store').sendFile(path.join(publicDir, 'index.html')));
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   if (err instanceof multer.MulterError) return res.status(400).json({ error: 'Rasm 5 MB dan katta.' });
