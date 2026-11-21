@@ -2,7 +2,7 @@ const $ = selector => document.querySelector(selector);
 const state = { projects: [], team: [], filter: 'Barchasi', query: '', admin: false };
 const icon = name => `<svg aria-hidden="true"><use href="#i-${name}"></use></svg>`;
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-const safeUrl = (raw, media = false) => { try { if (media && /^\/api\/media\/[0-9a-f]{24}$/.test(raw)) return raw; const u = new URL(raw); return ['https:', 'http:'].includes(u.protocol) ? u.href : ''; } catch { return ''; } };
+const safeUrl = (raw, media = false) => { try { if (media && (/^\/api\/media\/[0-9a-f]{24}$/.test(raw) || /^\/assets\/[a-z0-9-]+\.(webp|png|jpe?g)$/.test(raw))) return raw; const u = new URL(raw); return ['https:', 'http:'].includes(u.protocol) ? u.href : ''; } catch { return ''; } };
 const theme = value => ['education', 'market', 'invite', 'studio', 'security', 'bot'].includes(value) ? value : 'education';
 const cover = (project, detail = false) => {
   const image = safeUrl(project.coverUrl, true);
