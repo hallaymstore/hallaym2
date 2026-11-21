@@ -13,6 +13,10 @@ npm start
 
 `http://localhost:3000` — sayt; pastdagi **Boshqaruv** — katalogni tahrirlash. Birinchi Mongo ulanishda tasdiqlangan boshlang‘ich loyihalar avtomatik qo‘shiladi. `MONGO_DB` alohida bazaga mo‘ljallangan, shuning uchun mavjud Atlas klasteridan foydalansangiz ham boshqa ilova ma’lumotlariga tegilmaydi.
 
+Katalog `hallaymstore` hisobining 56 ta ommaviy repozitoriysini qamrab oladi. To‘rtta repo avvalgi saralangan kartalar bilan bog‘langan; `data/projects.json` qolgan 52 repo kartasini saqlaydi. MongoDB ularni bir martalik migratsiya bilan qo‘shadi, admin paneldagi keyingi tahrirlarni qayta deploy paytida almashtirmaydi. Ikki qo‘shimcha karta — ForensiX va Factory Bot — avvalgi katalogdagi alohida ishlar. Private repolar kiritilmagan.
+
+`/loyihalar` — barcha loyihalar katalogi; `/loyiha/:slug` — mustaqil loyiha sahifasi. `/xizmatlar`, `/jamoa`, `/jarayon` va `/aloqa` ham alohida URL bilan ochiladi. Demo havolasi faqat haqiqatan mavjud bo‘lsa beriladi; aks holda GitHub manbasi ochiladi. `MONGO_URI` ulanmagan holatda ham ommaviy katalog shu fayldagi ma’lumotlar bilan ko‘rinadi.
+
 Mongo ulanmaguncha ommaviy katalog namuna ma’lumotlar bilan o‘qish rejimida ishlaydi; admin yozish va rasm yuklash Mongo ulanishini talab qiladi. Tasvirlar MongoDB GridFS da saqlanadi va deploydan keyin ham qoladi. `ADMIN_PASSWORD` va `SESSION_SECRET` hech qachon repoga kiritilmaydi.
 
 ## Render

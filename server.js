@@ -4,6 +4,7 @@ import { MongoClient, GridFSBucket, ObjectId } from 'mongodb';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -25,6 +26,9 @@ const SEED_PROJECTS = [
   { slug: 'forensix', title: 'ForensiX', category: 'Platforma', label: 'Kiberxavfsizlik', summary: 'Raqamli xavfsizlik yo‘nalishidagi tahlil va ko‘rgazmali loyiha.', description: 'Kiberxavfsizlik mavzusida tahlil va taqdimotga mo‘ljallangan loyiha. Ommaviy demo manzili hali kiritilmagan.', audience: 'HALLAYM ichki loyiha', authors: 'Qoryog‘diyev Abdurahmon', stack: ['Xavfsizlik', 'Tahlil'], demoUrl: '', sourceUrl: '', coverUrl: '/assets/security.webp', theme: 'security', featured: false },
   { slug: 'factory-bot', title: 'Factory Bot', category: 'Telegram bot', label: 'Kontent avtomatlashtirish', summary: 'Telegram kanallari uchun kontent bilan ishlashni avtomatlashtiruvchi bot.', description: 'Kanal postlari, manbalar va yuborish jarayonini boshqarishga oid Telegram bot loyihasi. Ishlaydigan bot havolasini admin paneldan qo‘shish mumkin.', audience: 'Telegram kanal administratorlari', authors: 'Qoryog‘diyev Abdurahmon', stack: ['Node.js', 'Telegram Bot API'], demoUrl: '', sourceUrl: 'https://github.com/hallaymstore/gift', coverUrl: '/assets/bot.webp', theme: 'bot', featured: false }
 ];
+const GITHUB_PROJECTS = JSON.parse(readFileSync(new URL('./data/projects.json', import.meta.url), 'utf8'));
+const SEED_REPOS = { 'hallaym-edu': 'masofaviy2', marketuz: 'marketuz', tabrikuz: 'tabrikuz', 'omad-studio': 'lotto', 'factory-bot': 'gift' };
+const PUBLIC_PROJECTS = [...SEED_PROJECTS.map(p => ({ ...p, repo: SEED_REPOS[p.slug] || '' })), ...GITHUB_PROJECTS];
 
 const SEED_TEAM = [
   { name: 'Qoryog‘diyev Abdurahmon', role: 'Full stack dasturchi', bio: 'Veb-platformalar, Telegram botlar va mahsulot interfeyslari ustida ishlaydi.', initials: 'QA', profileUrl: 'https://github.com/hallaymstore', photoUrl: '', order: 0 }
@@ -60,6 +64,20 @@ async function connectDatabase() {
         await db.collection('metadata').updateOne({ key: 'cover_art_v1' }, { $set: { key: 'cover_art_v1', at: new Date() } }, { upsert: true });
       }
       await db.collection('projects').updateOne({ slug: 'hallaym-edu', coverUrl: '/assets/edu.webp' }, { $set: { coverUrl: '/assets/edu-v2.webp' } });
+      const githubMarker = await db.collection('metadata').findOne({ key: 'github_catalog_20261121' });
+      if (!githubMarker) {
+        await db.collection('projects').bulkWrite(GITHUB_PROJECTS.map((project, index) => ({
+          updateOne: { filter: { slug: project.slug }, update: { $setOnInsert: { ...project, order: SEED_PROJECTS.length + index, createdAt: new Date() } }, upsert: true }
+        })), { ordered: false });
+        await db.collection('projects').bulkWrite([
+          { updateOne: { filter: { slug: 'hallaym-edu' }, update: { $set: { repo: 'masofaviy2' } } } },
+          { updateOne: { filter: { slug: 'marketuz' }, update: { $set: { repo: 'marketuz' } } } },
+          { updateOne: { filter: { slug: 'tabrikuz' }, update: { $set: { repo: 'tabrikuz' } } } },
+          { updateOne: { filter: { slug: 'omad-studio' }, update: { $set: { repo: 'lotto' } } } },
+          { updateOne: { filter: { slug: 'factory-bot' }, update: { $set: { repo: 'gift' } } } }
+        ]);
+        await db.collection('metadata').updateOne({ key: 'github_catalog_20261121' }, { $set: { at: new Date() } }, { upsert: true });
+      }
       console.info('Portfolio database connected.');
     } catch (err) {
       await candidate.close().catch(() => {});
@@ -86,7 +104,7 @@ const cleanProject = (input) => {
   const title = cleanText(input.title, 90);
   if (!title) throw new Error('Loyiha nomi shart.');
   const category = cleanText(input.category, 32);
-  if (!['Platforma', 'Veb-sayt', 'Telegram bot', 'Ilova'].includes(category)) throw new Error('Kategoriya noto‘g‘ri.');
+  if (!['Platforma', 'Veb-sayt', 'Telegram bot', 'Ilova', 'Boshqa'].includes(category)) throw new Error('Kategoriya noto‘g‘ri.');
   const stack = Array.isArray(input.stack) ? input.stack : String(input.stack ?? '').split(',');
   return {
     title, category, label: cleanText(input.label, 60), summary: cleanText(input.summary, 260),
@@ -108,7 +126,7 @@ const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res)).catch(next)
 app.get('/api/healthz', (req, res) => res.json({ ok: true, database: db ? 'connected' : 'offline' }));
 app.get('/api/status', (req, res) => res.json({ editable: Boolean(db && password), database: db ? 'connected' : 'offline' }));
 app.get('/api/projects', wrap(async (req, res) => {
-  const items = db ? await db.collection('projects').find({}).sort({ order: 1, createdAt: -1 }).toArray() : SEED_PROJECTS;
+  const items = db ? await db.collection('projects').find({}).sort({ order: 1, createdAt: -1 }).toArray() : PUBLIC_PROJECTS;
   res.set('Cache-Control', 'no-store').json(items.map(serialize));
 }));
 app.get('/api/team', wrap(async (req, res) => {
